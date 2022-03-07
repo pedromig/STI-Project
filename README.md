@@ -1,5 +1,7 @@
 # STI-Project
 
+Information Technology Security course projects
+
 ## TP1
   * TODO 
 
@@ -10,4 +12,4 @@
   * TODO
 
 # Colaborators
-  - [Joana Brás](https://awesome-link-to-your-github.com)
+  - [Joana Brás](https://github.com/joanaa-b)
