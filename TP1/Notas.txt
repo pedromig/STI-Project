@@ -1,0 +1,151 @@
+== Apache + CA Configs ==
+
+Para a criação de uma CA, é necessário 2 ficheiros importantes:
+-> Root Certificate e Private Key.
+
+Primeiro, começa-se pela Key:
+-> openssl genrsa -des3 -out "Insert key name".key 2048 (Openssl para gerar a chave, encriptação 3DES, e o output vai ser o nome da chave. O "2048" é o comprimento de chave)
+	-> Vai ser solicitado uma passphrase
+
+Em seguida, criamos o nosso Root Certificate:
+-> openssl req -x509 -new -nodes -key "Insert key name".key -sha256 -days xxx -out "Insert cert name".pem (Openssl para criar um certificado em formato X.509, usando o SHA256 (Função de encriptação) e
+o output será em formato PEM
+	-> O X.509 descreve o que deve constar como conteúdo do certificado (Em conjunto com os x509 v3 extensions, que definem para que é que a chave é usada, subject, alternative names, etc).
+	-> O PEM (Privacy Enhanced Mail) é uma representação do conteúdo DER (Distinguished Encoding Rules) em base64 com os headers:
+	-----BEGIN ENCRYPTED PRIVATE KEY-------------
+	........
+	-----END ENCRYPTED PRIVATE KEY---------
+
+Uma vez criado os dois ficheiros, já podemos criar os nossos CA-Signed Certificates. Como boa prática, cria-se uma private key para o site e o respetivo CSR:
+-> openssl genrsa -out "Insert key name".key 2048 => Key
+-> openssl req -new -key "Insert key name".key -out "Insert csr name".csr => Certificate Sign Request
+
+Por último, procede-se à criação do X509 certificate:
+-> openssl x509 -req -in "Insert csr name".csr -CA "Insert rootcert name".pem -CAkey "Insert key name".key \-CAcreateserial -out "Insert cert name".crt -days "Insert days" -sha256 -extfile "Insert index file".ext (Criação de um x509, com os dados da nossa CA, bem como a criação de um serial number respetivo através da info que está no index)
+	-> Para criar o index, é boa prática colocar:
+	authorityKeyIdentifier=keyid,issuer
+	basicConstraints=CA:FALSE
+	keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+	subjectAltName = @alt_names
+
+	[alt_names]
+	DNS.1 = "Insert domain"
+
+No final deste processo, deveremos ter 5 ficheiros na nossa diretoria, 2 respetivos à Root e os referentes ao apache server (website)
+
+==============================================================================================================
+
+Em seguida, é necessário criar um ficheiro específico com os parametros ssl na diretoria /etc/apache2/conf-available/ssl-params.conf Uma vez criado, adicionar o seguinte conjunto de diretivas:
+
+SSLCipherSuite EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH
+SSLProtocol All -SSLv2 -SSLv3 -TLSv1 -TLSv1.1 -TLSv1.2 -TLSv1.3
+SSLHonorCipherOrder On
+# Disable preloading HSTS for now.  You can use the commented out header line that includes
+# the "preload" directive if you understand the implications.
+# Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+Header always set X-Frame-Options DENY
+Header always set X-Content-Type-Options nosniff
+# Requires Apache >= 2.4
+SSLCompression off
+SSLUseStapling on
+SSLStaplingCache "shmcb:logs/stapling-cache(150000)"
+# Requires Apache >= 2.4.11
+SSLSessionTickets Off
+
+Estas diretivas definem que protocolos irão ser estabelecidos bem como as suas encriptações e outros extras.
+
+==============================================================================================================
+
+Adicionalmente, é necessário configurar o virtual host do apache. Este ficheiro está na diretoria /etc/apache2/sites-available/default-ssl.conf
+
+Aqui, é necessário adicionar/alterar alguns parâmetros, tais como (Apenas ver os campos assinalados):
+
+-<IfModule mod_ssl.c>
+  <VirtualHost _default_:443>
+    ServerAdmin Email
+    DocumentRoot /var/www/html
+ => ServerName "Insert Domain"
+
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+    SSLEngine on
+
+ => SSLCertificateFile "Insert path to Cert File"
+ => SSLCertificateKeyFile "Insert path to Cert Key"
+ => SSLCACertificateFile "Insert path to Root Cert File" 
+
+    <FilesMatch "\.(cgi|shtml|phtml|php)$">
+      SSLOptions +StdEnvVars
+    </FilesMatch>
+    <Directory /usr/lib/cgi-bin>
+      SSLOptions +StdEnvVars
+    </Directory>
+  </VirtualHost>
+</IfModule>
+
+Para forçar a comunicação ser via HTTPS, é necessário ir ao ficheiro /etc/apache2/sites-available/000-default.conf e mudar/adicionar alguns parâmetros:
+
+NameVirtualHost *:80
+<VirtualHost *:80>
+   ServerName "Insert Domain" (por exemplo stijo.pt)
+   Redirect / "https://domain.com/pt"
+</VirtualHost>
+
+<VirtualHost _default_:443>
+   ServerName "Insert Domain"
+   DocumentRoot /usr/local/apache2/htdocs
+   SSLEngine On
+# etc...
+</VirtualHost>
+
+==============================================================================================================
+
+Uma vez concluido, é necessário ativar os demais protocolos e módulos:
+-> sudo a2enmod ssl;
+-> sudo a2enmod headers;
+-> sudo a2ensite default-ssl
+-> sudo a2enconf ssl-params
+
+Uma vez ativos, pode ser feito um teste à configuração do apache:
+-> sudo apache2ctl configtest (Se der Syntax:OK) então a configuração está feita com sucesso
+
+Por fim, é necessário dar restart/iniciar o apache:
+-> sudo systemctl restart apache2 ou
+-> sudo systemctl start apache2
+
+==============================================================================================================
+
+Eventais problemas/troubleshooting:
+-> Se durante o comando sudo apache2ctl configtest, ocorrer a mensagem "Could not reliably determine the server's FQDN...", pode ser resolvido da seguinte forma:
+	=> sudo vim /etc/apache2/conf-available/servername.conf (Criação do ficheiro servername.conf);
+	=> Adicionar a seguinte linha ao mesmo: ServerName "Insert Domain"
+-> Guardar o ficheiro, sair do mesmo e executar o command: "sudo a2enconf servername".
+-> Em seguinda, dar restart ao apache novamente.
+
+Necessidade de transferir ficheiros:
+-> Se, por algum motivo, é necessário transferir ficheiros de uma máquina para outra (Desde que comuniquem entre si), o command "scp" servirá perfeitamente, tal como:
+	=> scp "Insert file directory" username@"Destination IP":"Insert destination directory (Este comando vai copiar um ficheiro de uma dada diretoria e vai colocar na diretoria
+que foi detalhada. Entenda-se por "Destination IP", o IP da máquina de Destino e o "Username" o seu respetivo user.
+	Nota: Se ocorrer erros de "Permission Denied", é necessário:
+		=> Na máquina origem, correr o comando "sudo chown "Insert username" "Insert Pasta pretendida"" onde o ficheiro está localizado (Isto irá mudar o owner da pasta para o user especificado)
+		=> Em seguida, usar "sudo chmod -R 777 "Insert Pasta pretendida" (Isto faz com que a pasta tenha todas as permissões necessárias;
+		=> Repetir o mesmo para a máquina destino
+
+Interfaces Down:
+-> Pode haver a necessidade de colocar os interfaces up. Como tal basta:
+	=> sudo ifconfig "Interface name" up (Para descobrir o nome do interface pode-se fazer "nmcli device status" - mais provavelmente será o ens33 para casos relacionados com internet);
+	=> Uma vez levantado o interface, pode ser necessário atribuir um IP através do comando "sudo dhclient "Interface name""
+
+Permitir conectividades firewall:
+-> Pode ser preciso comunicar em ports específicos e como tal, acrescenta-se da seguinte forma:
+	=> sudo iptables -A INPUT -p tcp --dport "Insert Port Number" -j ACCEPT (1194 é openvpn, 443 e 80 são apache)
+
+-> Para confirmar que está aberto corre-se:
+	=> sudo iptables -L | grep "openvpn" 
+		-> O output deve dar as seguintes linhas de comando:
+		=> ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:openvpn
+		=> ACCEPT     udp  --  anywhere             anywhere             udp dpt:openvpn
+
+-> Para guardar as alterações corre-se:
+	=> sudo iptables-save
