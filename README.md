@@ -83,7 +83,113 @@ Information Technology Security course projects
       to be sent with your certificate request
       A challenge password []: *******
       An optional company name []:DEI
+  ```
 
+
+  * For the emission of the certificate used by the coimbra-vpn server running 
+  in the *coimbra* machine, we used (for demonstration purposes) the following 
+  configuration.
+  ```txt
+    Enter pass phrase for private/coimbra-vpn.key:
+    You are about to be asked to enter information that will be incorporated
+    into your certificate request.
+    What you are about to enter is what is called a Distinguished Name or a DN.
+    There are quite a few fields but you can leave some blank
+    For some fields there will be a default value,
+    If you enter '.', the field will be left blank.
+    -----
+    Country Name (2 letter code) [PT]:PT
+    State or Province Name (full name) [Some-State]:Coimbra
+    Locality Name (eg, city) []:Coimbra
+    Organization Name (eg, company) [Internet Widgits Pty Ltd]:UC
+    Organizational Unit Name (eg, section) []:DEI
+    Common Name (e.g. server FQDN or YOUR name) []:VPN Server Coimbra
+    Email Address []:ca@dei.uc.pt
+
+    Please enter the following 'extra' attributes
+    to be sent with your certificate request
+    A challenge password []:*******
+    An optional company name []:DEI
+  ```
+
+  * For the emission of the certificate used by the *coimbra* machine which (in 
+  our scenario) will work as client of the *lisbon* machine regarding the VPN 
+  service, we used (for demonstration purposes) the following configuration.
+  ```txt
+    Enter pass phrase for private/coimbra-client.key:
+    You are about to be asked to enter information that will be incorporated
+    into your certificate request.
+    What you are about to enter is what is called a Distinguished Name or a DN.
+    There are quite a few fields but you can leave some blank
+    For some fields there will be a default value,
+    If you enter '.', the field will be left blank.
+    -----
+    Country Name (2 letter code) [PT]:PT
+    State or Province Name (full name) [Some-State]:Coimbra
+    Locality Name (eg, city) []:Coimbra
+    Organization Name (eg, company) [Internet Widgits Pty Ltd]:UC
+    Organizational Unit Name (eg, section) []:DEI
+    Common Name (e.g. server FQDN or YOUR name) []:VPN Client Coimbra
+    Email Address []:ca@dei.uc.pt
+
+    Please enter the following 'extra' attributes
+    to be sent with your certificate request
+    A challenge password []:*******
+    An optional company name []:DEI
+  ```
+
+
+  * For the emission of the certificate used by the lisboa-vpn server running 
+  in the *lisboa* machine, we used (for demonstration purposes) the following 
+  configuration.
+
+  ```txt
+    Enter pass phrase for private/lisboa-vpn.key:
+    You are about to be asked to enter information that will be incorporated
+    into your certificate request.
+    What you are about to enter is what is called a Distinguished Name or a DN.
+    There are quite a few fields but you can leave some blank
+    For some fields there will be a default value,
+    If you enter '.', the field will be left blank.
+    -----
+    Country Name (2 letter code) [PT]:PT
+    State or Province Name (full name) [Some-State]:Lisboa
+    Locality Name (eg, city) []:Lisboa
+    Organization Name (eg, company) [Internet Widgits Pty Ltd]:IST
+    Organizational Unit Name (eg, section) []:DEI
+    Common Name (e.g. server FQDN or YOUR name) []:Lisboa VPN Server
+    Email Address []:lisboa@dei.ist.pt
+
+    Please enter the following 'extra' attributes
+    to be sent with your certificate request
+    A challenge password []:*******
+    An optional company name []:DEI
+  ```
+
+  * For the emission of the certificate used by the *road warrior* machine which (in 
+  our scenario) will work as client of the *coimbra* machine regarding the VPN 
+  service, we used (for demonstration purposes) the following configuration.
+  ```txt
+    Enter pass phrase for private/warrior-client.key:
+    You are about to be asked to enter information that will be incorporated
+    into your certificate request.
+    What you are about to enter is what is called a Distinguished Name or a DN.
+    There are quite a few fields but you can leave some blank
+    For some fields there will be a default value,
+    If you enter '.', the field will be left blank.
+    -----
+    Country Name (2 letter code) [PT]:PT
+    State or Province Name (full name) [Some-State]:Coimbra
+    Locality Name (eg, city) []:Coimbra
+    Organization Name (eg, company) [Internet Widgits Pty Ltd]:UC
+    Organizational Unit Name (eg, section) []:DEI
+    Common Name (e.g. server FQDN or YOUR name) []:Road Warrior VPN client
+    Email Address []:warrior@dei.uc.pt
+
+    Please enter the following 'extra' attributes
+    to be sent with your certificate request
+    A challenge password []:*******
+    An optional company name []:DEI
   ```
 
 # Colaborators

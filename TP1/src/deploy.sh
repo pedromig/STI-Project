@@ -11,18 +11,37 @@
 # Paths to the configuration files and global variables
 
 ## Coimbra
-COIMBRA_CA_CERT_ENTITIES="apache"
-COIMBRA_CA_CERT_ENTITIES_PKCS12="apache"
+### CA
 COIMBRA_SSL_CONF="coimbra/openssl.cnf"
 
+COIMBRA_CA_CERT_ENTITIES="apache coimbra-vpn warrior-client lisboa-vpn coimbra-client"
+COIMBRA_CA_CERT_ENTITIES_PKCS12="test-user"
+
+### VPN
+COIMBRA_VPN_SERVER_CONF="coimbra/server.conf"
+COIMBRA_VPN_CLIENT_CONF="coimbra/client.conf"
+
+COIMBRA_VPN_SERVER_KEY="coimbra-vpn.key"
+COIMBRA_VPN_CLIENT_KEY="coimbra-client.key"
+COIMBRA_VPN_SERVER_CERT="coimbra-vpn.crt"
+COIMBRA_VPN_CLIENT_CERT="coimbra-client.crt"
+
 ## Lisbon
+
+### Apache
 LISBON_APACHE_SSL_CONF="lisbon/apache-ssl.conf"
 LISBON_APACHE_CONF="lisbon/apache.conf"
+LISBON_HOSTS_FILE="lisbon/hosts"
 LISBON_APACHE_INDEX_HTML="lisbon/index.html"
-LISBOA_HOSTS_FILE="lisbon/hosts"
-LISBOA_APACHE_CERT="apache.crt"
-LISBOA_APACHE_CERT_KEY="apache.key"
-LISBOA_APACHE_CA_FILE="cacert.pem"
+
+LISBON_APACHE_CERT="apache.crt"
+LISBON_APACHE_CERT_KEY="apache.key"
+LISBON_APACHE_CA_FILE="cacert.pem"
+
+### VPN
+LISBON_VPN_SERVER_KEY="lisboa-vpn.key"
+LISBON_VPN_SERVER_CERT="lisboa-vpn.crt"
+LISBON_VPN_TA_KEY="ta.key"
 
 # Required Programs (packages downloadable with apt-get, 
 # may be different for # other package managers)
@@ -56,12 +75,25 @@ coimbra() {
   # OpenSSL Config Directory
   ssldir="/etc/ssl"               # Path to the ssl config file directory
 
+  # Openvpn Config Directory
+  vpndir="/etc/openvpn"
+
+  # OCSP Service Settings
+  port=81
+  logfile="log.txt"
+
+  # VPN Settings
+  dhbits=2048
+  dhk="dh${dhbits}.pem"
+  tak="ta.key"
+
   # CA Files
   keybits=2048                    # Number of bits for the private key 
   days=3650                       # Certificate validity
   capk="cakey.pem"                # CA RSA private key file name
   cacert="cacert.pem"             # CA certificate
   cacsr="ca.crt"                  # CA CSR (Certificates Signing Request)
+  index="index.txt"
 
   # CA Directories
   cadir="/etc/pki/CA";            # Path to the CA main directory
@@ -136,6 +168,50 @@ coimbra() {
         -in "${certs}/${entity}.crt" \
         -certfile "${cacert}"      
   done 
+
+  # Setup VPN
+  cd "${vpndir}"
+
+  ## Copy requried files/certificates to the apropriate directories
+  sudo openssl dhparam -out ${dhk} ${dhbits} 
+  sudo openvpn --genkey tls-auth "${tak}"
+
+  sudo cp -f "${certsdir}/${COIMBRA_VPN_SERVER_CONF}" "${vpndir}/server"
+  sudo cp -f "${certsdir}/${COIMBRA_VPN_SERVER_CERT}" "${vpndir}/server"
+  sudo cp -f "${capriv}/${COIMBRA_VPN_SERVER_KEY}" "${vpndir}/server"
+  sudo cp -f "${tak}" "${vpndir}/server"
+  sudo cp -f "${cadir}/${cacert}" "${vpndir}/server/ca.crt"
+  sudo cp -f "${dhk}" "${vpndir}/server"
+ 
+  sudo cp -f "${certsdir}/${COIMBRA_VPN_CLIENT_CONF}" "${vpndir}/client"
+  sudo cp -f "${certsdir}/${COIMBRA_VPN_CLIENT_CERT}" "${vpndir}/client"
+  sudo cp -f "${capriv}/${COIMBRA_VPN_CLIENT_KEY}" "${vpndir}/client"
+  sudo cp -f "${LISBON_VPN_TA_KEY}" "${vpndir}/client"
+  sudo cp -f "${cadir}/${cacert}" "${vpndir}/client/ca.crt"
+
+  # Start systemd service daemon's
+  sudo systemctl enable openvpn && sudo systemctl start openvpn
+
+  ## NOTE: For the authentication required while setting up the 
+  ## openvpn service you will be prompted for some passwords
+  ## that can be inputed using the following tool:
+  ## sudo systemd-tty-ask-password-agent
+  sudo systemctl enable openvpn-server@server.service
+  sudo systemctl start openvpn-server@server.service
+
+  sudo systemctl enable openvpn-client@client.service
+  sudo systemctl start openvpn-client@client.service
+
+  # Activate OCSP Server (blocking process - exiting the shell will kill it)
+  cd "${cadir}"
+  sudo openssl ocsp \
+      -index "${index}" \
+      -port  "${port}" \
+      -rsigner "${cacert}" \
+      -rkey "${capriv}/${capk}" \
+      -CA "${cacert}" \
+      -text \
+      -out "${logfile}" 
 }
 
 # Lisbon Server Configurations
@@ -149,11 +225,44 @@ lisbon() {
   keydir="/etc/pki/CA/private"
   cadir="/etc/pki/CA/"
 
+  # Openvpn Config Directory
+  vpndir="/etc/openvpn"
+
   # Enable Apache2 modules
   sudo e2enmod ssl
   
   # System Directories 
   etc="/etc"
+
+  # VPN Settings
+  keybits=2048                    # Number of bits for the private key 
+  dhbits=2048
+  dhk="dh${dhbits}.pem"
+  tak="ta.key"
+
+  ## Copy requried files/certificates to the apropriate directories
+  sudo openssl dhparam -out "dh${dhbits}.pem" ${dhbits} 
+  sudo openvpn --genkey tls-auth "${LISBON_VPN_TA_KEY}"
+
+
+  sudo cp -f "${certdir}/${LISBON_VPN_SERVER_CONF}" "${vpndir}/server"
+  sudo cp -f "${certdir}/${LISBON_VPN_SERVER_CERT}" "${vpndir}/server"
+  sudo cp -f "${keydir}/${LISBON_VPN_SERVER_KEY}" "${vpndir}/server"
+  sudo cp -f "${tak}" "${vpndir}/server"
+  sudo cp -f "${cadir}/${LISBON_APACHE_CA_FILE}" "${vpndir}/server/ca.crt"
+  sudo cp -f "${dhk}" "${vpndir}/server"
+
+  # Start systemd service daemon's
+  sudo systemctl enable openvpn && sudo systemctl start openvpn
+
+  ## NOTE: For the authentication required while setting up the 
+  ## openvpn service you will be prompted for some passwords
+  ## that can be inputed using the following tool:
+  ## sudo systemd-tty-ask-password-agent
+  sudo systemctl enable openvpn-server@server.service
+  sudo systemctl start openvpn-server@server.service
+
+  # Setup VPN
 
   # Setup folders/files needed for the configuration deployment
   sudo mkdir -p "${certdir}" "${keydir}" "${cadir}"
@@ -176,9 +285,30 @@ lisbon() {
   sudo systemctl start apache2.service || sudo systemctl reload apache2.service
 }
 
-# Road Warriot Configurations
+# Road Configurations
 warrior() {
-  echo "Road Warrior"
+  # Certificate Related Directories 
+  certdir="/etc/pki/CA/certs"
+  keydir="/etc/pki/CA/private"
+  cadir="/etc/pki/CA/"
+
+  # System Directories 
+  etc="/etc"
+
+  # VPN Settings
+  keybits=2048                    # Number of bits for the private key 
+  dhbits=2048
+  dhk="dh${dhbits}.pem"
+  tak="ta.key"
+
+  sudo cp -f "${WARRIOR_SSL_CONF}" "${ssldir}"
+  sudo mkdir -p "${capriv}" "${certsdir}" "${newcerts}"
+
+  sudo cp -f "${certsdir}/${WARRIOR_VPN_CLIENT_CONF}" "${vpndir}/client"
+  sudo cp -f "${certsdir}/${WARRIOR_VPN_CLIENT_CERT}" "${vpndir}/client"
+  sudo cp -f "${capriv}/${WARRIOR_VPN_CLIENT_KEY}" "${vpndir}/client"
+  sudo cp -f "${WARRIOR_VPN_TA_KEY}" "${vpndir}/client"
+  sudo cp -f "${cadir}/${cacert}" "${vpndir}/client/ca.crt"
 }
 
 if [ $# -eq 0 ]; then
