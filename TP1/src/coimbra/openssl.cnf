@@ -168,7 +168,7 @@ unstructuredName		= An optional company name
 [ usr_cert ]
 
 # These extensions are added when 'ca' signs a request.
-authorityInfoAccess = OCSP;URI:http://ocsp.coimbra.pt
+authorityInfoAccess = OCSP;URI:http://ocsp.coimbra.pt:81
 
 # This goes against PKIX guidelines but some CAs do it and some software
 # requires this to avoid interpreting an end user certificate as a CA.

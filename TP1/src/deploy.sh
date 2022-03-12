@@ -244,7 +244,6 @@ lisbon() {
   sudo openssl dhparam -out "dh${dhbits}.pem" ${dhbits} 
   sudo openvpn --genkey tls-auth "${LISBON_VPN_TA_KEY}"
 
-
   sudo cp -f "${certdir}/${LISBON_VPN_SERVER_CONF}" "${vpndir}/server"
   sudo cp -f "${certdir}/${LISBON_VPN_SERVER_CERT}" "${vpndir}/server"
   sudo cp -f "${keydir}/${LISBON_VPN_SERVER_KEY}" "${vpndir}/server"
@@ -285,28 +284,33 @@ lisbon() {
   sudo systemctl start apache2.service || sudo systemctl reload apache2.service
 }
 
-# Road Configurations
+# Road Warrior Configurations
 warrior() {
-  # Certificate Related Directories 
-  certdir="/etc/pki/CA/certs"
+  # OpenSSL and Certificate related directories 
+  certdir="/etc/pki/CA/certs" 
   keydir="/etc/pki/CA/private"
+  exportsdir="/etc/pki/exports"
   cadir="/etc/pki/CA/"
 
-  # System Directories 
-  etc="/etc"
-
-  # VPN Settings
-  keybits=2048                    # Number of bits for the private key 
+  # Warrior VPN client settings and files
+  keybits=2048
   dhbits=2048
-  dhk="dh${dhbits}.pem"
-  tak="ta.key"
+  dhkey="dh${dhbits}.pem"
+  takey="ta.key"
 
+  # Setup the warrior client machine
+  ## Install required sofware
+  sudo apt-get install -y openvpn
+
+  ## Create necessary directories
+  sudo mkdir -p "${keydir}" "${certsdir}" "${newcerts}" "${exportdir}"
+
+  ## Copy config files
   sudo cp -f "${WARRIOR_SSL_CONF}" "${ssldir}"
-  sudo mkdir -p "${capriv}" "${certsdir}" "${newcerts}"
-
+ 
   sudo cp -f "${certsdir}/${WARRIOR_VPN_CLIENT_CONF}" "${vpndir}/client"
   sudo cp -f "${certsdir}/${WARRIOR_VPN_CLIENT_CERT}" "${vpndir}/client"
-  sudo cp -f "${capriv}/${WARRIOR_VPN_CLIENT_KEY}" "${vpndir}/client"
+  sudo cp -f "${keydir}/${WARRIOR_VPN_CLIENT_KEY}" "${vpndir}/client"
   sudo cp -f "${WARRIOR_VPN_TA_KEY}" "${vpndir}/client"
   sudo cp -f "${cadir}/${cacert}" "${vpndir}/client/ca.crt"
 }
