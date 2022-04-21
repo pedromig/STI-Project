@@ -7,6 +7,14 @@ source /etc/network/interfaces.d/*
 auto lo
 iface lo inet loopback
 
+
+# The interface that connects the router
+# to the Internet
+auto ens33
+iface ens33 inet static
+	address 193.137.128.1
+	netmask 255.255.255.0
+
 # The interface that connects the router
 # to the DMZ 
 auto ens34
