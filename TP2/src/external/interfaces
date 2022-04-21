@@ -1,0 +1,20 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# Interface simulating the dns2 server
+auto ens34
+iface ens34 inet static
+	address 193.137.16.75
+	netmask 255.0.0.0
+
+# Interface simulating the eden server
+auto ens36
+iface ens36 inet static
+	address 193.136.212.1
+	netmask 255.0.0.0
