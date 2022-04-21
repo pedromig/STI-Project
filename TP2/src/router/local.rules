@@ -1,0 +1,6 @@
+
+drop tcp any any -> 10.10.10.4 [80,443] (msg: "SQLi OR ATTACK!"; pcre:"/w*((%27)|('))((%6F)|o|(%4F))((%72)|r|(%52))/i"; sid:1000001;)
+drop tcp any any -> 10.10.10.4 [80,443] (msg: "SQLi UNION ATTACK!"; pcre:"/((\%27)|(\'))union/i" ; sid:1000005; )
+
+drop tcp any any -> 10.10.10.4 [80,443] (msg: "XSS TAG ATTACK!"; pcre:"/((\%3C)|<)((\%2F)|V)*[a-z0-9\%]+((\%3E)|>)/i"; sid:1000006;)
+drop tcp any any -> 10.10.10.4 [80,443] (msg: "XSS IMAGE ATTACK!"; pcre:"/((\%3C)|<)((\%69)|i|(\%49))((\%6D)|m|(\%4D))((\%67)|g|(\%47))[^\n]+((\%3E)|>)/i" ;sid:1000007; )

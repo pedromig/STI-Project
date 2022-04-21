@@ -1,0 +1,22 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The interface that connects the router
+# to the DMZ 
+auto ens34
+iface ens34 inet static
+	address 10.10.10.3
+	netmask 255.255.255.0
+
+# The interface that connects the router
+# to the Internal Network
+auto ens36
+iface ens36 inet static
+	address 10.20.20.3
+	netmask 255.255.255.0	
