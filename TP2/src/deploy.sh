@@ -64,6 +64,10 @@ if [ $# -eq 0 ]; then
   exit 1;
 fi
 
+run-snort() {
+${SUDO}
+}
+
 snort() {
 
 echo "${BLUE}${BOLD}INSTALLING SNORT!${RESET}${NORM}"
